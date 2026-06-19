@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Deep Link Test — auth2</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #0f1115; color: #e7e9ee; padding: 24px;
+      }
+      .card {
+        width: 100%; max-width: 460px; background: #181b22; border: 1px solid #262a33;
+        border-radius: 16px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+      }
+      h1 { font-size: 18px; margin: 0 0 4px; }
+      p.sub { margin: 0 0 20px; color: #9aa1ad; font-size: 13px; }
+      label { display: block; font-size: 12px; color: #9aa1ad; margin: 14px 0 6px; }
+      input {
+        width: 100%; padding: 11px 12px; border-radius: 9px; border: 1px solid #2d323d;
+        background: #11141a; color: #e7e9ee; font-size: 14px; font-family: ui-monospace, monospace;
+      }
+      button {
+        width: 100%; margin-top: 18px; padding: 13px; border: 0; border-radius: 10px;
+        background: #3b82f6; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+      }
+      button:active { transform: translateY(1px); }
+      .row { display: flex; gap: 8px; align-items: center; margin-top: 14px; font-size: 13px; color: #9aa1ad; }
+      .status {
+        margin-top: 18px; padding: 12px; border-radius: 9px; font-size: 13px;
+        background: #11141a; border: 1px solid #2d323d; word-break: break-all; min-height: 18px;
+      }
+      a.manual { color: #60a5fa; }
+      code { font-family: ui-monospace, monospace; color: #c7cdd8; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Deep Link Test</h1>
+      <p class="sub">Simulates an auth provider redirecting back into the Capacitor app.</p>
+
+      <label for="redirect">Redirect deep link (scheme set later)</label>
+      <input id="redirect" spellcheck="false" autocapitalize="off" autocorrect="off" />
+
+      <div class="row">
+        <input type="checkbox" id="auto" style="width:auto" />
+        <label for="auto" style="margin:0">Auto-redirect on load (3s)</label>
+      </div>
+
+      <button id="go">Simulate login &amp; return to app</button>
+
+      <div class="status" id="status"></div>
+    </div>
+
+    <script>
+      // Default scheme — change here or override at runtime with ?redirect=...
+      const DEFAULT_REDIRECT = 'teleop://auth/callback';
+      const STORE_KEY = 'auth2.redirect';
+
+      const $redirect = document.getElementById('redirect');
+      const $status = document.getElementById('status');
+      const $auto = document.getElementById('auto');
+
+      const params = new URLSearchParams(location.search);
+      // Precedence: ?redirect= query → saved value → default.
+      const initial = params.get('redirect') || localStorage.getItem(STORE_KEY) || DEFAULT_REDIRECT;
+      $redirect.value = initial;
+      $redirect.addEventListener('input', () => localStorage.setItem(STORE_KEY, $redirect.value));
+
+      function randomString(n) {
+        const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let s = '';
+        for (let i = 0; i < n; i++) s += a[Math.floor(Math.random() * a.length)];
+        return s;
+      }
+
+      function buildUrl() {
+        const base = $redirect.value.trim();
+        const code = 'test_' + randomString(12);
+        const state = randomString(16);
+        const sep = base.includes('?') ? '&' : '?';
+        return base + sep + 'code=' + code + '&state=' + state;
+      }
+
+      function go() {
+        const url = buildUrl();
+        $status.innerHTML =
+          'Opening:<br><code>' + url + '</code><br><br>' +
+          "If the app doesn't open, tap " +
+          '<a class="manual" href="' + url + '">this link</a> manually.';
+        // Navigating to a non-http scheme hands off to the OS, which opens the app
+        // if it has registered the scheme / App Link.
+        window.location.href = url;
+      }
+
+      document.getElementById('go').addEventListener('click', go);
+
+      if (params.get('auto') === '1') {
+        $auto.checked = true;
+        let n = 3;
+        $status.textContent = 'Auto-redirecting in ' + n + 's…';
+        const t = setInterval(() => {
+          n--;
+          if (n <= 0) { clearInterval(t); go(); }
+          else $status.textContent = 'Auto-redirecting in ' + n + 's…';
+        }, 1000);
+      }
+    </script>
+  </body>
+</html>
