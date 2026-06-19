@@ -92,15 +92,14 @@
       // custom scheme (AppAuth/Google convention) instead of a short scheme.
       const params = new URLSearchParams(location.search);
 
-      // Accept the standard OAuth param names; fall back to a sensible default so
-      // the page is still usable when opened directly.
-      // Default points at an https callback ON THIS DOMAIN so the redirect is
-      // visible in any browser (demo). For the real app, pass the custom scheme:
-      //   ?redirect_uri=com.earthbrain.teleop.tablet://callback
+      // Accept the standard OAuth param names; fall back to defaults that mirror a
+      // real OIDC authorize request, e.g.:
+      //   connect/authorize?response_type=code&client_id=ee47388b-a891-4772-83c0-b21d59c48cb4&redirect_uri=http://localhost:9000/callback&scope=abcde
       const redirectUri = params.get('redirect_uri') || params.get('redirect') ||
-        (location.origin + '/callback');
-      const clientId    = params.get('client_id') || 'teleop-tablet';
-      const scope       = params.get('scope') || 'openid email profile';
+        'http://localhost:9000/callback';
+      const clientId    = params.get('client_id') || 'ee47388b-a891-4772-83c0-b21d59c48cb4';
+      const scope       = params.get('scope') || 'abcde';
+      const responseType = params.get('response_type') || 'code';
       // state is round-tripped untouched (CSRF protection); generate one if absent.
       const state       = params.get('state') || randomString(16);
 
