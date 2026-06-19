@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Deep Link Test — auth2</title>
+    <title>Sign in — auth2</title>
     <style>
       :root { color-scheme: light dark; }
       * { box-sizing: border-box; }
@@ -13,62 +13,96 @@
         background: #0f1115; color: #e7e9ee; padding: 24px;
       }
       .card {
-        width: 100%; max-width: 460px; background: #181b22; border: 1px solid #262a33;
-        border-radius: 16px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+        width: 100%; max-width: 420px; background: #181b22; border: 1px solid #262a33;
+        border-radius: 16px; padding: 28px 28px 24px; box-shadow: 0 10px 40px rgba(0,0,0,.4);
       }
-      h1 { font-size: 18px; margin: 0 0 4px; }
-      p.sub { margin: 0 0 20px; color: #9aa1ad; font-size: 13px; }
+      .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+      .logo {
+        width: 32px; height: 32px; border-radius: 8px; flex: 0 0 32px;
+        background: conic-gradient(from 220deg, #4285f4, #ea4335, #fbbc05, #34a853, #4285f4);
+      }
+      .brand b { font-size: 15px; font-weight: 600; }
+      h1 { font-size: 21px; margin: 0 0 6px; font-weight: 500; }
+      p.sub { margin: 0 0 6px; color: #9aa1ad; font-size: 14px; }
+      .app {
+        margin: 18px 0; padding: 13px 14px; border-radius: 10px;
+        background: #11141a; border: 1px solid #2d323d; font-size: 13px;
+      }
+      .app .k { color: #9aa1ad; }
+      .app .v { color: #c7cdd8; font-family: ui-monospace, monospace; word-break: break-all; }
+      .app .v + .k { display: block; margin-top: 10px; }
       label { display: block; font-size: 12px; color: #9aa1ad; margin: 14px 0 6px; }
       input {
         width: 100%; padding: 11px 12px; border-radius: 9px; border: 1px solid #2d323d;
-        background: #11141a; color: #e7e9ee; font-size: 14px; font-family: ui-monospace, monospace;
+        background: #11141a; color: #e7e9ee; font-size: 14px;
       }
+      .actions { display: flex; gap: 10px; margin-top: 22px; }
       button {
-        width: 100%; margin-top: 18px; padding: 13px; border: 0; border-radius: 10px;
-        background: #3b82f6; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+        flex: 1; padding: 12px; border: 0; border-radius: 10px;
+        font-size: 15px; font-weight: 600; cursor: pointer;
       }
+      button.primary { background: #3b82f6; color: #fff; }
+      button.ghost { background: transparent; color: #9aa1ad; border: 1px solid #2d323d; }
       button:active { transform: translateY(1px); }
-      .row { display: flex; gap: 8px; align-items: center; margin-top: 14px; font-size: 13px; color: #9aa1ad; }
-      .status {
-        margin-top: 18px; padding: 12px; border-radius: 9px; font-size: 13px;
-        background: #11141a; border: 1px solid #2d323d; word-break: break-all; min-height: 18px;
+      .scopes { margin: 4px 0 0; padding-left: 18px; color: #9aa1ad; font-size: 13px; }
+      .note {
+        margin-top: 20px; font-size: 12px; color: #6b7280; word-break: break-all;
       }
-      a.manual { color: #60a5fa; }
-      code { font-family: ui-monospace, monospace; color: #c7cdd8; }
+      .note code { font-family: ui-monospace, monospace; color: #8a93a3; }
+      .status:empty { display: none; }
+      .status {
+        margin-top: 16px; padding: 12px; border-radius: 9px; font-size: 13px;
+        background: #11141a; border: 1px solid #2d323d; word-break: break-all;
+      }
+      .status a { color: #60a5fa; }
     </style>
   </head>
   <body>
     <div class="card">
-      <h1>Deep Link Test</h1>
-      <p class="sub">Simulates an auth provider redirecting back into the Capacitor app.</p>
+      <div class="brand"><span class="logo"></span><b id="provider">auth2 Accounts</b></div>
 
-      <label for="redirect">Redirect deep link (scheme set later)</label>
-      <input id="redirect" spellcheck="false" autocapitalize="off" autocorrect="off" />
+      <h1>Sign in</h1>
+      <p class="sub">to continue to <b id="appName">Teleop Tablet</b></p>
 
-      <div class="row">
-        <input type="checkbox" id="auto" style="width:auto" />
-        <label for="auto" style="margin:0">Auto-redirect on load (3s)</label>
+      <div class="app">
+        <span class="k">App is requesting to redirect to</span>
+        <span class="v" id="redirectShow"></span>
+        <span class="k">Permissions</span>
+        <ul class="scopes" id="scopeList"></ul>
       </div>
 
-      <button id="go">Simulate login &amp; return to app</button>
+      <label for="account">Account</label>
+      <input id="account" value="operator@earthbrain.test" spellcheck="false"
+             autocapitalize="off" autocorrect="off" />
 
+      <div class="actions">
+        <button class="ghost" id="cancel">Cancel</button>
+        <button class="primary" id="signin">Sign in</button>
+      </div>
+
+      <p class="note">Will redirect to <code id="finalNote"></code></p>
       <div class="status" id="status"></div>
     </div>
 
     <script>
-      // Default scheme — change here or override at runtime with ?redirect=...
-      const DEFAULT_REDIRECT = 'teleop://auth/callback';
-      const STORE_KEY = 'auth2.redirect';
-
-      const $redirect = document.getElementById('redirect');
-      const $status = document.getElementById('status');
-      const $auto = document.getElementById('auto');
-
+      // This page plays the role of an OAuth authorization endpoint, e.g.:
+      //   https://<domain>/?redirect_uri=com.earthbrain.teleop.tablet://callback&state=xyz&scope=openid%20email&client_id=teleop-tablet
+      // After the user signs in, it redirects back to redirect_uri with ?code=&state=
+      // exactly like Google/Microsoft do. The redirect_uri here uses a reverse-DNS
+      // custom scheme (AppAuth/Google convention) instead of a short scheme.
       const params = new URLSearchParams(location.search);
-      // Precedence: ?redirect= query → saved value → default.
-      const initial = params.get('redirect') || localStorage.getItem(STORE_KEY) || DEFAULT_REDIRECT;
-      $redirect.value = initial;
-      $redirect.addEventListener('input', () => localStorage.setItem(STORE_KEY, $redirect.value));
+
+      // Accept the standard OAuth param names; fall back to a sensible default so
+      // the page is still usable when opened directly.
+      // Default points at an https callback ON THIS DOMAIN so the redirect is
+      // visible in any browser (demo). For the real app, pass the custom scheme:
+      //   ?redirect_uri=com.earthbrain.teleop.tablet://callback
+      const redirectUri = params.get('redirect_uri') || params.get('redirect') ||
+        (location.origin + '/callback');
+      const clientId    = params.get('client_id') || 'teleop-tablet';
+      const scope       = params.get('scope') || 'openid email profile';
+      // state is round-tripped untouched (CSRF protection); generate one if absent.
+      const state       = params.get('state') || randomString(16);
 
       function randomString(n) {
         const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -77,37 +111,43 @@
         return s;
       }
 
-      function buildUrl() {
-        const base = $redirect.value.trim();
-        const code = 'test_' + randomString(12);
-        const state = randomString(16);
-        const sep = base.includes('?') ? '&' : '?';
-        return base + sep + 'code=' + code + '&state=' + state;
+      function buildCallback() {
+        const code = 'test_' + randomString(20);
+        const sep = redirectUri.includes('?') ? '&' : '?';
+        return redirectUri + sep + 'code=' + encodeURIComponent(code) +
+               '&state=' + encodeURIComponent(state);
       }
 
-      function go() {
-        const url = buildUrl();
-        $status.innerHTML =
-          'Opening:<br><code>' + url + '</code><br><br>' +
-          "If the app doesn't open, tap " +
-          '<a class="manual" href="' + url + '">this link</a> manually.';
-        // Navigating to a non-http scheme hands off to the OS, which opens the app
-        // if it has registered the scheme / App Link.
+      // Show the requesting redirect target + scopes, like a real consent screen.
+      document.getElementById('redirectShow').textContent = redirectUri;
+      document.getElementById('appName').textContent = clientId;
+      const scopeList = document.getElementById('scopeList');
+      scope.split(/[\s,]+/).filter(Boolean).forEach((s) => {
+        const li = document.createElement('li');
+        li.textContent = s;
+        scopeList.appendChild(li);
+      });
+      // Preview of the final callback (code is illustrative; regenerated on submit).
+      document.getElementById('finalNote').textContent =
+        redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'code=…&state=' + state;
+
+      document.getElementById('signin').addEventListener('click', () => {
+        const url = buildCallback();
+        // Show what we're handing off — on desktop/an unregistered device the OS
+        // silently ignores a custom scheme, so surface the URL + a manual link.
+        document.getElementById('status').innerHTML =
+          'Redirecting to:<br><code>' + url + '</code><br><br>' +
+          "If nothing opens, this device has no app registered for the scheme. " +
+          'Tap <a href="' + url + '">here</a> to retry manually.';
+        // Hand off to the OS — opens the app if it registered the scheme / App Link.
         window.location.href = url;
-      }
+      });
 
-      document.getElementById('go').addEventListener('click', go);
-
-      if (params.get('auto') === '1') {
-        $auto.checked = true;
-        let n = 3;
-        $status.textContent = 'Auto-redirecting in ' + n + 's…';
-        const t = setInterval(() => {
-          n--;
-          if (n <= 0) { clearInterval(t); go(); }
-          else $status.textContent = 'Auto-redirecting in ' + n + 's…';
-        }, 1000);
-      }
+      document.getElementById('cancel').addEventListener('click', () => {
+        const sep = redirectUri.includes('?') ? '&' : '?';
+        window.location.href = redirectUri + sep + 'error=access_denied&state=' +
+          encodeURIComponent(state);
+      });
     </script>
   </body>
 </html>

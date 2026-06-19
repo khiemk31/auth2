@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Callback — auth2</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #0f1115; color: #e7e9ee; padding: 24px;
+      }
+      .card {
+        width: 100%; max-width: 460px; background: #181b22; border: 1px solid #262a33;
+        border-radius: 16px; padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+      }
+      .check {
+        width: 48px; height: 48px; border-radius: 50%; background: #16331f;
+        border: 1px solid #1f6b38; display: flex; align-items: center; justify-content: center;
+        margin-bottom: 18px; font-size: 26px; color: #34d399;
+      }
+      .check.err { background: #331616; border-color: #6b1f1f; color: #f87171; }
+      h1 { font-size: 20px; margin: 0 0 6px; font-weight: 600; }
+      p.sub { margin: 0 0 20px; color: #9aa1ad; font-size: 14px; }
+      .kv { padding: 14px; border-radius: 10px; background: #11141a; border: 1px solid #2d323d; }
+      .kv .row { display: flex; flex-direction: column; gap: 3px; padding: 8px 0; }
+      .kv .row + .row { border-top: 1px solid #232730; }
+      .kv .k { font-size: 12px; color: #9aa1ad; }
+      .kv .v { font-family: ui-monospace, monospace; font-size: 13px; color: #c7cdd8; word-break: break-all; }
+      a.back { display: inline-block; margin-top: 20px; color: #60a5fa; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="check" id="icon">✓</div>
+      <h1 id="title">Login successful</h1>
+      <p class="sub" id="sub">The auth provider redirected back here with the authorization code.</p>
+
+      <div class="kv" id="kv"></div>
+
+      <a class="back" href="/">← Back to sign-in</a>
+    </div>
+
+    <script>
+      // This is the redirect target. In the real app the OS hands the same URL
+      // (com.earthbrain.teleop.tablet://callback?code=…&state=…) to Capacitor's
+      // appUrlOpen listener — here we just display what arrived to prove the hop.
+      const params = new URLSearchParams(location.search);
+      const code = params.get('code');
+      const state = params.get('state');
+      const error = params.get('error');
+
+      const kv = document.getElementById('kv');
+      function row(k, v) {
+        const r = document.createElement('div'); r.className = 'row';
+        const ke = document.createElement('span'); ke.className = 'k'; ke.textContent = k;
+        const ve = document.createElement('span'); ve.className = 'v'; ve.textContent = v || '—';
+        r.appendChild(ke); r.appendChild(ve); kv.appendChild(r);
+      }
+
+      if (error) {
+        document.getElementById('icon').textContent = '✕';
+        document.getElementById('icon').classList.add('err');
+        document.getElementById('title').textContent = 'Login cancelled';
+        document.getElementById('sub').textContent = 'The provider returned an error instead of a code.';
+        row('error', error);
+        row('state', state);
+      } else {
+        row('code', code);
+        row('state', state);
+        row('full URL', location.href);
+      }
+    </script>
+  </body>
+</html>
